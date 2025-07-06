@@ -172,11 +172,6 @@
       <h2>Wynik</h2>
       <p class="result-value">${formatNumber(resultVal, resultUnit === 'ha' ? 2 : (resultUnit === 'j.s.' ? 2 : 0))} ${resultUnit}</p>
       <p>Zastosowana norma: ${normText}</p>
-      <p class="text-sm mt-8">
-        <strong>Logika zaokrągleń:</strong><br>
-        • ha → kg/j.s.: zaokrąglenie W DÓŁ (Math.floor)<br>
-        • kg/j.s. → ha: zaokrąglenie NORMALNE (Math.round)
-      </p>
     `;
 
     showSuccess(resultHTML);
