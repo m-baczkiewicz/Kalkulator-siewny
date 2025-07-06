@@ -10,7 +10,7 @@
   <!-- Header -->
   <header class="header py-16">
     <div class="container flex justify-between items-center">
-      <h1>Kalkulator&nbsp;materiału&nbsp;siewnego</h1>
+      <h1>Kalkulator materiału siewnego</h1>
       <button id="themeToggle" class="btn btn--outline" aria-label="Przełącz tryb ciemny" title="Przełącz tryb ciemny">🌙</button>
     </div>
   </header>
@@ -83,7 +83,7 @@
           <button id="btnAdd" class="btn btn--primary flex-1">Dodaj</button>
           <button id="btnSub" class="btn btn--secondary flex-1">Odejmij</button>
         </div>
-        <div id="quickResult" class="mt-8"></div>
+        <div id="quickResult" class="mt-8 text-center"></div>
       </div>
     </section>
   </main>
@@ -94,29 +94,31 @@
 
   <!-- Dane aplikacji -->
   <script>
-    window.APP_DATA = {"crops": [
-      {"label":"Pszenica zwyczajna – populacyjna","kg_per_ha":150,"units":false},
-      {"label":"Pszenica zwyczajna – mieszańcowa","kg_per_ha":70,"units":true,"js_per_ha":1.7},
-      {"label":"Pszenica twarda","kg_per_ha":150,"units":false},
-      {"label":"Pszenica orkisz","kg_per_ha":200,"units":false},
-      {"label":"Żyto – populacyjne","kg_per_ha":90,"units":true,"js_per_ha":2.0},
-      {"label":"Żyto – syntetyczne","kg_per_ha":80,"units":false},
-      {"label":"Żyto – mieszańcowe","kg_per_ha":60,"units":true,"js_per_ha":1.7},
-      {"label":"Jęczmień – populacyjny","kg_per_ha":130,"units":false},
-      {"label":"Jęczmień – mieszańcowy","kg_per_ha":90,"units":true,"js_per_ha":2.0},
-      {"label":"Pszenżyto","kg_per_ha":150,"units":false},
-      {"label":"Owies zwyczajny","kg_per_ha":150,"units":false},
-      {"label":"Owies nagi","kg_per_ha":120,"units":false},
-      {"label":"Owies szorstki","kg_per_ha":80,"units":false},
-      {"label":"Łubin (żółty/wąskolistny/biały)","kg_per_ha":150,"units":false},
-      {"label":"Groch siewny","kg_per_ha":200,"units":false},
-      {"label":"Bobik","kg_per_ha":270,"units":false},
-      {"label":"Wyka siewna","kg_per_ha":80,"units":false},
-      {"label":"Soja","kg_per_ha":120,"units":false},
-      {"label":"Ziemniak","kg_per_ha":2000,"units":false},
-      {"label":"Mieszanki zbożowe/pastewne","kg_per_ha":140,"units":false},
-      {"label":"Mieszanki orkiszowe","kg_per_ha":200,"units":false}
-    ]};
+    window.CROPS_DATA = {
+      "crops": [
+        {"id": "pszenica_zwyczajna_populacyjna", "label_pl": "Pszenica zwyczajna – populacyjna", "norm_kg_per_ha": 150, "has_seed_units": false},
+        {"id": "pszenica_zwyczajna_mieszancowa", "label_pl": "Pszenica zwyczajna – mieszańcowa", "norm_kg_per_ha": 70, "has_seed_units": true, "norm_js_per_ha": 1.7},
+        {"id": "pszenica_twarda", "label_pl": "Pszenica twarda", "norm_kg_per_ha": 150, "has_seed_units": false},
+        {"id": "pszenica_orkisz", "label_pl": "Pszenica orkisz", "norm_kg_per_ha": 200, "has_seed_units": false},
+        {"id": "zyto_populacyjne", "label_pl": "Żyto – populacyjne", "norm_kg_per_ha": 90, "has_seed_units": true, "norm_js_per_ha": 2.0},
+        {"id": "zyto_syntetyczne", "label_pl": "Żyto – syntetyczne", "norm_kg_per_ha": 80, "has_seed_units": false},
+        {"id": "zyto_mieszancowe", "label_pl": "Żyto – mieszańcowe", "norm_kg_per_ha": 60, "has_seed_units": true, "norm_js_per_ha": 1.7},
+        {"id": "jeczmien_populacyjny", "label_pl": "Jęczmień – populacyjny", "norm_kg_per_ha": 130, "has_seed_units": false},
+        {"id": "jeczmien_mieszancowy", "label_pl": "Jęczmień – mieszańcowy", "norm_kg_per_ha": 90, "has_seed_units": true, "norm_js_per_ha": 2.0},
+        {"id": "pszenzyto", "label_pl": "Pszenżyto", "norm_kg_per_ha": 150, "has_seed_units": false},
+        {"id": "owies_zwyczajny", "label_pl": "Owies zwyczajny", "norm_kg_per_ha": 150, "has_seed_units": false},
+        {"id": "owies_nagi", "label_pl": "Owies nagi", "norm_kg_per_ha": 120, "has_seed_units": false},
+        {"id": "owies_szorstki", "label_pl": "Owies szorstki", "norm_kg_per_ha": 80, "has_seed_units": false},
+        {"id": "lubin", "label_pl": "Łubin (żółty/wąskolistny/biały)", "norm_kg_per_ha": 150, "has_seed_units": false},
+        {"id": "groch_siewny", "label_pl": "Groch siewny", "norm_kg_per_ha": 200, "has_seed_units": false},
+        {"id": "bobik", "label_pl": "Bobik", "norm_kg_per_ha": 270, "has_seed_units": false},
+        {"id": "wyka_siewna", "label_pl": "Wyka siewna", "norm_kg_per_ha": 80, "has_seed_units": false},
+        {"id": "soja", "label_pl": "Soja", "norm_kg_per_ha": 120, "has_seed_units": false},
+        {"id": "ziemniak", "label_pl": "Ziemniak", "norm_kg_per_ha": 2000, "has_seed_units": false},
+        {"id": "mieszanki_zbozowe", "label_pl": "Mieszanki zbożowe/pastewne", "norm_kg_per_ha": 140, "has_seed_units": false},
+        {"id": "mieszanki_orkiszowe", "label_pl": "Mieszanki orkiszowe", "norm_kg_per_ha": 200, "has_seed_units": false}
+      ]
+    };
   </script>
   <script src="app.js"></script>
 </body>

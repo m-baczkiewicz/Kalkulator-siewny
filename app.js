@@ -1,6 +1,6 @@
-// app.js – logika kalkulatora materiału siewnego + historia + mini-kalkulator
+// app.js – logika kalkulatora materiału siewnego z poprawioną logiką zaokrągleń
 (() => {
-  const crops = window.APP_DATA.crops;
+  const crops = window.CROPS_DATA.crops;
 
   // ---------- Referencje DOM ----------
   const cropSelect   = document.getElementById('cropSelect');
@@ -32,15 +32,18 @@
     bindEvents();
     updateUnitVisibility();
     updateValueLabel();
+    renderHistory();
+    // Initialize theme
+    initTheme();
   }
 
   // --------- Inicjalizacja selecta ---------
   function populateCropSelect() {
     const frag = document.createDocumentFragment();
-    crops.forEach((crop, idx) => {
+    crops.forEach(crop => {
       const opt = document.createElement('option');
-      opt.value = idx.toString();
-      opt.textContent = crop.label;
+      opt.value = crop.id;
+      opt.textContent = crop.label_pl;
       frag.appendChild(opt);
     });
     cropSelect.appendChild(frag);
@@ -77,14 +80,12 @@
 
   // ---------- UI helpers ----------
   function getSelectedCrop() {
-    const idx = parseInt(cropSelect.value, 10);
-    if (isNaN(idx)) return null;
-    return crops[idx];
+    return crops.find(c => c.id === cropSelect.value) || null;
   }
 
   function updateUnitVisibility() {
     const crop = getSelectedCrop();
-    if (crop && crop.units === true) {
+    if (crop && crop.has_seed_units) {
       unitField.classList.remove('hidden');
     } else {
       unitField.classList.add('hidden');
@@ -118,13 +119,13 @@
     resultBox.innerHTML = '';
   }
 
-  // ---------- Main calculation ----------
+  // ---------- Main calculation with corrected rounding logic ----------
   function onFormSubmit(e) {
     e.preventDefault();
 
     const crop = getSelectedCrop();
     if (!crop) {
-      alert('Wybierz gatunek / typ.');
+      showError('Wybierz gatunek / typ.');
       return;
     }
 
@@ -134,49 +135,59 @@
     const rawVal = valueInput.value.trim().replace(',', '.');
     const numericVal = parseFloat(rawVal);
     if (!numericVal || numericVal <= 0) {
-      alert('Podaj dodatnią liczbę.');
+      showError('Podaj dodatnią liczbę.');
       return;
     }
 
-    const norm = unit === 'kg' ? crop.kg_per_ha : crop.js_per_ha;
+    const norm = unit === 'kg' ? crop.norm_kg_per_ha : crop.norm_js_per_ha;
     if (unit === 'js' && (norm === undefined || norm === null)) {
-      alert('Dla wybranego gatunku brak normy w jednostkach siewnych.');
+      showError('Dla wybranego gatunku brak normy w jednostkach siewnych.');
       return;
     }
 
     let resultVal, resultUnit;
 
     if (mode === 'materialToArea') {
+      // Materiał → Powierzchnia: ZAOKRĄGLENIE NORMALNE (Math.round)
       const areaRaw = numericVal / norm;
-      resultVal = Math.floor(areaRaw * 100) / 100; // 2 dp floor
+      resultVal = Math.round(areaRaw * 100) / 100; // 2 d.p. round
       resultUnit = 'ha';
-    } else { // areaToMaterial
+    } else { 
+      // Powierzchnia → Materiał: ZAOKRĄGLENIE W DÓŁ (Math.floor)
       const materialRaw = numericVal * norm;
       if (unit === 'kg') {
-        resultVal = Math.floor(materialRaw); // pełne kg
+        resultVal = Math.floor(materialRaw); // floor to integer kg
         resultUnit = 'kg';
       } else {
-        resultVal = Math.floor(materialRaw * 100) / 100; // 2 dp
+        resultVal = Math.floor(materialRaw * 100) / 100; // floor to 2 d.p.
         resultUnit = 'j.s.';
       }
     }
 
-    const normText = unit === 'kg' ? `${formatNumber(norm, 0)} kg/ha` : `${formatNumber(norm, 2)} j.s./ha`;
+    const normText = unit === 'kg' 
+      ? `${formatNumber(norm, 0)} kg/ha` 
+      : `${formatNumber(norm, 2)} j.s./ha`;
 
-    const html = `
+    const resultHTML = `
       <h2>Wynik</h2>
       <p class="result-value">${formatNumber(resultVal, resultUnit === 'ha' ? 2 : (resultUnit === 'j.s.' ? 2 : 0))} ${resultUnit}</p>
       <p>Zastosowana norma: ${normText}</p>
-      <p class="text-sm mt-8">Wartości zaokrąglone w dół zgodnie z rozporządzeniem.</p>
+      <p class="text-sm mt-8">
+        <strong>Logika zaokrągleń:</strong><br>
+        • ha → kg/j.s.: zaokrąglenie W DÓŁ (Math.floor)<br>
+        • kg/j.s. → ha: zaokrąglenie NORMALNE (Math.round)
+      </p>
     `;
 
-    resultBox.innerHTML = html;
-    resultCard.classList.remove('hidden');
-    resultCard.scrollIntoView({ behavior: 'smooth' });
+    showSuccess(resultHTML);
 
     // Update history
-    const cropLabel = crop.label;
-    const historyLine = `${cropLabel}: ${formatNumber(resultVal, resultUnit === 'ha' ? 2 : (resultUnit === 'j.s.' ? 2 : 0))} ${resultUnit}`;
+    const cropLabel = crop.label_pl;
+    const inputText = `${numericVal} ${mode === 'materialToArea' ? unit : 'ha'}`;
+    const outputText = `${formatNumber(resultVal, resultUnit === 'ha' ? 2 : (resultUnit === 'j.s.' ? 2 : 0))} ${resultUnit}`;
+    const timestamp = new Date().toLocaleTimeString('pl-PL', {hour: '2-digit', minute: '2-digit'});
+    const historyLine = `${timestamp}: ${cropLabel.split(' – ')[0]} | ${inputText} → ${outputText}`;
+    
     history.unshift(historyLine);
     if (history.length > 5) history.pop();
     renderHistory();
@@ -189,14 +200,33 @@
     });
   }
 
+  function showError(msg) {
+    resultBox.innerHTML = `<div class="status status--error">${msg}</div>`;
+    resultCard.classList.remove('hidden');
+  }
+
+  function showSuccess(html) {
+    resultBox.innerHTML = html;
+    resultCard.classList.remove('hidden');
+    resultCard.scrollIntoView({ behavior: 'smooth' });
+  }
+
   // ---------- Historia ----------
   function renderHistory() {
     historyList.innerHTML = '';
-    history.forEach(line => {
+    if (history.length === 0) {
       const li = document.createElement('li');
-      li.textContent = line;
+      li.textContent = 'Brak obliczeń';
+      li.style.fontStyle = 'italic';
+      li.style.color = 'var(--color-text-secondary)';
       historyList.appendChild(li);
-    });
+    } else {
+      history.forEach(line => {
+        const li = document.createElement('li');
+        li.textContent = line;
+        historyList.appendChild(li);
+      });
+    }
   }
 
   // ---------- Mini kalkulator ----------
@@ -205,15 +235,28 @@
     const bVal = parseFloat(quickB.value.replace(',', '.')) || 0;
 
     const res = op === '+' ? aVal + bVal : aVal - bVal;
-    quickResult.textContent = `Wynik: ${res.toFixed(2)}`;
+    quickResult.textContent = `Wynik: ${res.toFixed(2).replace('.', ',')}`;
   }
 
   // ---------- Theme toggle ----------
+  function initTheme() {
+    // Check if user prefers dark mode
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
+      themeToggle.textContent = '☀️';
+      themeToggle.setAttribute('aria-label', 'Wyłącz tryb ciemny');
+    } else {
+      themeToggle.textContent = '🌙';
+      themeToggle.setAttribute('aria-label', 'Włącz tryb ciemny');
+    }
+  }
+
   function toggleTheme() {
     const root = document.documentElement;
-    const isDark = root.getAttribute('data-color-scheme') === 'dark';
-    if (isDark) {
-      root.removeAttribute('data-color-scheme');
+    const currentTheme = root.getAttribute('data-color-scheme');
+    
+    if (currentTheme === 'dark') {
+      root.setAttribute('data-color-scheme', 'light');
       themeToggle.textContent = '🌙';
       themeToggle.setAttribute('aria-label', 'Włącz tryb ciemny');
     } else {
